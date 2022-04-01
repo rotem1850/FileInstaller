@@ -12,31 +12,7 @@
 #include <cstdint>
 #include <functional>
 
-LPCWSTR installation_files2[] = {L"pch.cpp", L"a.txt", L"rotem.txt"};
-std::vector<LPCWSTR> installation_files = { L"pch.cpp", L"a.txt", L"rotem.txt" };
-
-LPCWSTR installation_dir = L"target";
-
-class FileInstaller {
-	public:
-		std::vector<LPCWSTR> &file_paths;
-		LPCWSTR installation_dir;
-
-		FileInstaller(std::vector<LPCWSTR> &file_paths, LPCWSTR installation_dir);
-		~FileInstaller();
-		void install();
-		
-	private:
-		bool is_dir_already_exists;
-		std::vector<LPCWSTR> file_paths_to_clean;
-		void copy_file(LPCWSTR file_path);
-		void delete_file(LPCWSTR file_path);
-		void copy_files();
-		void delete_installed_files();
-		void create_installation_dir();
-		void delete_installation_dir();
-
-};
+#include "FileInstaller.h"
 
 void FileInstaller::copy_file(LPCWSTR file_path) {
 	wchar_t full_target_path[MAX_PATH] = { 0 };
@@ -130,10 +106,4 @@ FileInstaller::FileInstaller(std::vector<LPCWSTR> &file_paths, LPCWSTR installat
 FileInstaller::~FileInstaller() {
 	this->delete_installed_files();
 	this->delete_installation_dir();
-}
-
-int main()
-{
-	FileInstaller f = FileInstaller(installation_files, installation_dir);
-	f.install();
 }
