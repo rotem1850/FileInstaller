@@ -266,3 +266,4 @@ __pycache__/
 /FileInstaller/a.txt
 /FileInstaller/installation_files/rotem.txt
 /FileInstaller/target
+/FileInstaller/resource.h

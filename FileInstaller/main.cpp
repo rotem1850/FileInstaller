@@ -11,12 +11,6 @@ std::vector<std::wstring> g_installation_files = { L"installation_files\\pch.cpp
 												 };
 std::wstring g_installation_target = L"target";
 
-
-std::unique_ptr<wchar_t[]> join()
-{
-	return nullptr;
-}
-
 int main()
 {
 	auto status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
