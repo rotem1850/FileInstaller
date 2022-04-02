@@ -168,9 +168,6 @@
     <ClInclude Include="FileInstaller.hpp" />
     <ClInclude Include="FileUtils.hpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="FileInstaller.rc" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
