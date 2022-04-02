@@ -1,7 +1,6 @@
 ﻿#include <windows.h>
 #include <iostream>
 #include <vector>
-#include <cstdint>
 
 #include "FileInstaller.hpp"
 #include "FileUtils.hpp"

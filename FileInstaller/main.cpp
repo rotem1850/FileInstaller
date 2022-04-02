@@ -1,6 +1,5 @@
 ﻿#include <windows.h>
 #include <vector>
-#include <memory>
 #include <iostream>
 
 #include "FileInstaller.hpp"
