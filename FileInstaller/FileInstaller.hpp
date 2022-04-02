@@ -11,24 +11,20 @@
 enum FileInstallerStatus : uint32_t {
 	FILEINSTALLER_SUCCESS = 0,
 	
-
 	FILEUTILS_COPY_FILE_COPY_FAILED,
-	FILEUTILS_CHANGE_FILE_PATH_DIRECTORY_INVALID_ARGUMENT,
 	FILEUTILS_DELETE_FILE_DELETE_FAILED,
 	FILEUTILS_CREATE_DIRECTORY_CREATE_FAILED,
 	FILEUTILS_DELETE_DIRECTORY_REMOVE_FAILED,
-	FILEUTILS_CHANGE_FILE_PATH_DIRECTORY_JOIN_PATH_FAILED,
-
 };
 
 class FileInstallerException : public std::exception
 {
-private:
-	FileInstallerStatus status;
-
 public:
 	FileInstallerException(FileInstallerStatus status) : status(status) {};
-	FileInstallerStatus get_status() { return status; }
+	FileInstallerStatus get_status() const { return status; }
+
+private:
+	FileInstallerStatus status;
 };
 
 /*
@@ -38,9 +34,12 @@ Notice: FileInstaller class doesn't support paths longer than MAX_PATH.
 */
 class FileInstaller final {
 public:
-	FileInstaller(std::vector<std::wstring> &file_paths, std::wstring installation_dir);
+	FileInstaller(std::vector<std::wstring> &file_paths, std::wstring const &installation_dir);
 	virtual ~FileInstaller();
 	void install();
+
+	FileInstaller(const FileInstaller&) = delete;
+	FileInstaller& operator=(FileInstaller const&) = delete;
 
 private:
 	void _copy_file(std::wstring const &file_path);
@@ -48,10 +47,10 @@ private:
 	void _copy_files();
 	void _create_installation_dir();
 	
-	//This method is working by best effort.
+	// This method is working by best effort.
 	FileInstallerStatus _delete_installation_dir();
 
-	//This method is working by best effort.
+	// This method is working by best effort.
 	FileInstallerStatus _delete_installed_files();
 
 	/*
@@ -62,9 +61,8 @@ private:
 
 private:
 	std::vector<std::wstring> &m_file_paths;
-	std::wstring m_installation_dir;
+	std::wstring const &m_installation_dir;
 	bool m_is_dir_already_exists;
 	std::vector<std::wstring> m_file_paths_to_clean;
-
 
 };
