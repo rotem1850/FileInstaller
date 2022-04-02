@@ -11,11 +11,13 @@
 enum FileInstallerStatus : uint32_t {
 	FILEINSTALLER_SUCCESS = 0,
 	FILEINSTALLER_COPY_FILE_JOIN_PATH_FAILED,
-	FILEINSTALLER_COPY_FILE_COPY_FAILED,
 	FILEINSTALLER_DELETE_FILE_JOIN_PATH_FAILED,
 	FILEINSTALLER_DELETE_FILE_DELETE_FAILED,
 	FILEINSTALLER_CREATE_INSTALLATION_DIR_CREATE_FAILED,
 	FILEINSTALLER_DELETE_INSTALLATION_DIR_REMOVE_FAILED,
+
+	FILEUTILS_COPY_FILE_COPY_FAILED,
+	FILEUTILS_CHANGE_FILE_PATH_DIRECTORY_INVALID_ARGUMENT,
 };
 
 class FileInstallerException : public std::exception
@@ -24,30 +26,44 @@ private:
 	FileInstallerStatus status;
 
 public:
-	FileInstallerException(FileInstallerStatus status) :status(status) {};
+	FileInstallerException(FileInstallerStatus status) : status(status) {};
 	FileInstallerStatus get_status() { return status; }
 };
 
-class FileInstaller {
-public:
-	std::vector<LPCWSTR> &file_paths;
-	LPCWSTR installation_dir;
+/*
+FileInstaller - Allows installation of files in a target directory.
 
-	FileInstaller(std::vector<LPCWSTR> &file_paths, LPCWSTR installation_dir);
-	~FileInstaller();
+Notice: FileInstaller class doesn't support paths longer than MAX_PATH.
+*/
+class FileInstaller final {
+public:
+	FileInstaller(std::vector<std::wstring> &file_paths, std::wstring installation_dir);
+	virtual ~FileInstaller();
 	void install();
 
 private:
-	bool is_dir_already_exists;
-	std::vector<LPCWSTR> file_paths_to_clean;
-	void copy_file(LPCWSTR file_path);
-	void delete_file(LPCWSTR file_path);
-	void copy_files();
-	void delete_installed_files();
-	void create_installation_dir();
-	void delete_installation_dir();
+	void _copy_file(std::wstring const &file_path);
+	void _delete_file(std::wstring const &file_path);
+	void _copy_files();
+	void _create_installation_dir();
 	
-	/* The revert method cant be called standalone because it will revert only things performed during the install method.*/
-	void revert_installation();
+	//This method is working by best effort.
+	FileInstallerStatus _delete_installation_dir();
+
+	//This method is working by best effort.
+	FileInstallerStatus _delete_installed_files();
+
+	/*
+	The revert method cant be called standalone because it will revert only things performed during the install method.
+	This is working by best effort.
+	*/
+	void _revert_installation();
+
+private:
+	std::vector<std::wstring> &m_file_paths;
+	std::wstring m_installation_dir;
+	bool m_is_dir_already_exists;
+	std::vector<std::wstring> m_file_paths_to_clean;
+
 
 };

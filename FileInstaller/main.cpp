@@ -3,17 +3,17 @@
 
 #include "FileInstaller.hpp"
 
-std::vector<LPCWSTR> installation_files = { L"installation_files\\pch.cpp", 
-											L"installation_files\\a.txt",
-											L"installation_files\\poster.zip" };
-LPCWSTR installation_target = L"target";
+std::vector<std::wstring> g_installation_files = { L"installation_files\\pch.cpp",
+												   L"installation_files\\a.txt",
+											       L"installation_files\\poster.zip" };
+std::wstring g_installation_target = L"target";
 
 int main()
 {
-	FileInstallerStatus status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
-	FileInstaller f = FileInstaller(installation_files, installation_target);
+	auto status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
 	try {
-		f.install();
+		FileInstaller installer = FileInstaller(g_installation_files, g_installation_target);
+		installer.install();
 	}
 	catch(FileInstallerException &e) {
 		status = e.get_status();
