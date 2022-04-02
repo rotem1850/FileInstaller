@@ -264,3 +264,5 @@ __pycache__/
 /FileInstaller/pch.h
 /FileInstaller/pch.cpp
 /FileInstaller/a.txt
+/FileInstaller/installation_files/rotem.txt
+/FileInstaller/target

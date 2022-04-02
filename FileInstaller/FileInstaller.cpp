@@ -1,44 +1,51 @@
-﻿// FileInstaller.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
-#include "pch.h"
-
+﻿#include <windows.h>
 #include <iostream>
-#include <windows.h>
-#include <winbase.h>
 #include <pathcch.h>
-#include <array>
+#include <shlwapi.h>
 #include <vector>
 #include <cstdint>
-#include <functional>
 
-#include "FileInstaller.h"
+#include "FileInstaller.hpp"
+
+FileInstaller::FileInstaller(std::vector<LPCWSTR> &file_paths, LPCWSTR installation_dir)
+	: file_paths(file_paths),
+	installation_dir(installation_dir),
+	is_dir_already_exists(false),
+	file_paths_to_clean({}) {
+
+}
+
+FileInstaller::~FileInstaller() {
+
+}
 
 void FileInstaller::copy_file(LPCWSTR file_path) {
 	wchar_t full_target_path[MAX_PATH] = { 0 };
-	HRESULT result = PathCchCombine(full_target_path, MAX_PATH, this->installation_dir, file_path);
+	LPCWSTR filename = PathFindFileNameW(file_path);
+	HRESULT result = PathCchCombine(full_target_path, MAX_PATH, this->installation_dir, filename);
 	if (S_OK != result) {
-		//TODO: raise an exception.
+		DEBUG_MSG("PathCchCombine failed with error_code=" << result << " path=" << file_path);
+		throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_COPY_FILE_JOIN_PATH_FAILED);
 	}
 
-	std::wcout << full_target_path << L"\n";
 	if (!CopyFileExW(file_path, full_target_path, nullptr, nullptr, nullptr, COPY_FILE_FAIL_IF_EXISTS)) {
 		if (GetLastError() != ERROR_FILE_EXISTS) {
-			//TODO: raise an exception
-			return;
+			DEBUG_MSG("CopyFileExW failed with error_code=" << GetLastError() << " path=" << full_target_path);
+			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_COPY_FILE_COPY_FAILED);
 		}
-		std::wcout << L"File exists " << full_target_path << L"\n";
+
+		/* File already exists, so we have nothing to do. */
+		DEBUG_MSG("Ignoring already exising file. path=" << full_target_path);
 	}
 	else {
-		/* Save non-existing files in the target dir so we could delete it later. */
+		/* The file doesn't exists in the target dir. We save it so we could delete it later. */
 		this->file_paths_to_clean.push_back(file_path);
-		std::wcout << L"File not exists " << full_target_path << L"\n";
+		DEBUG_MSG("File was copied. from_path=" << file_path << ", to_path=" << full_target_path);
 	}
 
 }
 
 void FileInstaller::copy_files() {
-	// std::for_each(std::begin(this->file_paths), std::end(this->file_paths), this->copy_file);
 	for (auto file_path = std::begin(this->file_paths); file_path != std::end(this->file_paths); ++file_path) {
 		this->copy_file(*file_path);
 	}
@@ -46,26 +53,35 @@ void FileInstaller::copy_files() {
 
 void FileInstaller::delete_file(LPCWSTR file_path) {
 	wchar_t full_target_path[MAX_PATH] = { 0 };
-	HRESULT result = PathCchCombine(full_target_path, MAX_PATH, this->installation_dir, file_path);
+	LPCWSTR filename = PathFindFileNameW(file_path);
+	HRESULT result = PathCchCombine(full_target_path, MAX_PATH, this->installation_dir, filename);
 	if (S_OK != result) {
-		std::wcout << L"ERRRRRROR\n";
-		//TODO: raise an exception.
+		DEBUG_MSG("PathCchCombine failed with error_code=" << result);
+		throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_DELETE_FILE_JOIN_PATH_FAILED);
 	}
 	
 	bool is_deleted = DeleteFileW(full_target_path);
 	if (!is_deleted) {
-		std::wcout << L"Failed Deleting " << full_target_path << L"\n";
-		// Critical error. Nothing to do.
+		DEBUG_MSG("DeleteFileW failed with error_code=" << GetLastError() << " path = " << full_target_path);
+		throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_DELETE_FILE_DELETE_FAILED);
 	}
-
-	std::wcout << L"Deleting " << full_target_path << L"\n";
+	DEBUG_MSG("File was deleted path=" << full_target_path);
 }
 
 void FileInstaller::delete_installed_files() {
-
-	// std::for_each(std::begin(this->file_paths), std::end(this->file_paths), this->copy_file);
+	FileInstallerStatus status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
 	for (auto file_path = std::begin(this->file_paths_to_clean); file_path != std::end(this->file_paths_to_clean); ++file_path) {
-		this->delete_file(*file_path);
+		try {
+			this->delete_file(*file_path);
+		}
+		catch (FileInstallerException &e) {
+			/* Critical error. Nothing to do */
+			status = e.get_status();
+		}
+	}
+
+	if (FileInstallerStatus::FILEINSTALLER_SUCCESS != status) {
+		throw FileInstallerException(status);
 	}
 }
 
@@ -73,9 +89,11 @@ void FileInstaller::create_installation_dir() {
 	if (!CreateDirectoryW(this->installation_dir, NULL)) {
 		if (GetLastError() == ERROR_ALREADY_EXISTS) {
 			this->is_dir_already_exists = true;
+			DEBUG_MSG("Installation dir already exists. path=" << this->installation_dir);
 		}
 		else {
-			//TODO: raise here an exception. because we could make the dir.
+			DEBUG_MSG("CreateDirectoryW failed with error_code=" << GetLastError() << " dir_path= " << this->installation_dir);
+			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_CREATE_INSTALLATION_DIR_CREATE_FAILED);
 		}
 	}
 }
@@ -86,24 +104,27 @@ void FileInstaller::delete_installation_dir() {
 	}
 
 	if (!RemoveDirectoryW(this->installation_dir)) {
-		//Critical error. Nothing to do.
+		DEBUG_MSG("RemoveDirectoryW failed with error_code=" << GetLastError() << " dir_path= " << this->installation_dir);
+		throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_DELETE_INSTALLATION_DIR_REMOVE_FAILED);
 	}
 
-	std::wcout << L"Deleting Dir " << this->installation_dir << L"\n";
+	DEBUG_MSG("Directory was deleted. path=" << this->installation_dir);
 }
 
 void FileInstaller::install() {
-	this->create_installation_dir();
-	this->copy_files();
+	try {
+		this->create_installation_dir();
+		this->copy_files();
+	}
+	catch (FileInstallerException &e) {
+		this->revert_installation();
+		/* Installing Exception will be ignored in case an exception will be raised during revertion. */
+		throw e;
+	}
 }
 
-FileInstaller::FileInstaller(std::vector<LPCWSTR> &file_paths, LPCWSTR installation_dir) : file_paths(file_paths) {
-	this->installation_dir = installation_dir;
-	this->is_dir_already_exists = false;
-	this->file_paths_to_clean = {};
-}
-
-FileInstaller::~FileInstaller() {
+void FileInstaller::revert_installation() {
+	DEBUG_MSG("Reverting installation");
 	this->delete_installed_files();
 	this->delete_installation_dir();
 }

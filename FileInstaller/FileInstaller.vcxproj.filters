@@ -23,7 +23,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FileInstaller.h">
+    <ClInclude Include="FileInstaller.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
