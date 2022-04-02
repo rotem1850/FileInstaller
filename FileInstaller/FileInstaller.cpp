@@ -19,7 +19,7 @@ namespace FileUtils {
 		bool is_deleted = DeleteFileW(file_path.c_str());
 		if (!is_deleted) {
 			DEBUG_MSG("DeleteFileW failed with error_code=" << GetLastError() << " path = " << file_path.c_str());
-			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_DELETE_FILE_DELETE_FAILED);
+			throw FileInstallerException(FileInstallerStatus::FILEUTILS_DELETE_FILE_DELETE_FAILED);
 		}
 
 		DEBUG_MSG("File was deleted path=" << file_path.c_str());
@@ -29,7 +29,7 @@ namespace FileUtils {
 		if (!CreateDirectoryW(directory_path.c_str(), nullptr)) {
 			DEBUG_MSG("CreateDirectoryW failed with error_code=" << GetLastError() <<
 					  " dir_path= " << directory_path.c_str());
-			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_CREATE_INSTALLATION_DIR_CREATE_FAILED);
+			throw FileInstallerException(FileInstallerStatus::FILEUTILS_CREATE_DIRECTORY_CREATE_FAILED);
 		}
 
 		DEBUG_MSG("Directory was created. path=" << directory_path.c_str());
@@ -39,7 +39,7 @@ namespace FileUtils {
 		if (!RemoveDirectoryW(directory_path.c_str())) {
 			DEBUG_MSG("RemoveDirectoryW failed with error_code=" << GetLastError() <<
 					  " dir_path= " << directory_path.c_str());
-			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_DELETE_INSTALLATION_DIR_REMOVE_FAILED);
+			throw FileInstallerException(FileInstallerStatus::FILEUTILS_DELETE_DIRECTORY_REMOVE_FAILED);
 		}
 
 		DEBUG_MSG("Directory was deleted. path=" << directory_path.c_str());
@@ -59,7 +59,7 @@ namespace FileUtils {
 		DEBUG_MSG("PathCchCombine " << full_target_path << " path=" << new_directory.c_str() << new_file_path);
 		if (FAILED(result)) {
 			DEBUG_MSG("PathCchCombine failed with error_code=" << result << " path=" << source_file_path.c_str());
-			throw FileInstallerException(FileInstallerStatus::FILEINSTALLER_COPY_FILE_JOIN_PATH_FAILED);
+			throw FileInstallerException(FileInstallerStatus::FILEUTILS_CHANGE_FILE_PATH_DIRECTORY_JOIN_PATH_FAILED);
 		}
 	}
 
