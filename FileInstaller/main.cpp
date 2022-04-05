@@ -36,5 +36,5 @@ int main()
 		status = e.get_status();
 	}
 
-	return (int)status;
+	return (uint32_t)status;
 }

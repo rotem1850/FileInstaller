@@ -9,7 +9,7 @@ Installer::Installer(std::vector<std::shared_ptr<ResourceInstaller>> &resource_i
 	m_installed_resource_installers({}),
 	m_is_installed(false) {
 
-	// Validate input doen't have any null values.
+	// Validate input doen't have any null values. So there will be no surprises during installation.
 	for (auto& resource_installer : this->m_resource_installers) {
 		if (nullptr == resource_installer) {
 			throw FileInstallerException(FileInstallerStatus::INSTALLER_INVALID_ARGUMENTS);

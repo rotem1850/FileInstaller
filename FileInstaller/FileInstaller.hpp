@@ -38,6 +38,7 @@ Notice: Installer class doesn't support paths longer than MAX_PATH.
 */
 class Installer final {
 public:
+	// resource_installers is a vector of ResourceInstallers to be performed during installation.
 	Installer(std::vector<std::shared_ptr<ResourceInstaller>>& resource_installers);
 	virtual ~Installer();
 	void install();
@@ -59,7 +60,7 @@ private:
 };
 
 /*
-* An abstract class used for adding new installation operation to the install process.
+* An abstract class used for adding new operation to the install process.
 * For example:
 *	- Operation of changing the registry property will derive from this class.
 */

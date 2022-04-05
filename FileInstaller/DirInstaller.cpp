@@ -32,8 +32,6 @@ void DirInstaller::_create_directory() {
 }
 
 void DirInstaller::_delete_directory() {
-	auto status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
-
 	if (!FileUtils::is_path_exists(this->m_directory_path.c_str())) {
 		return;
 	}
