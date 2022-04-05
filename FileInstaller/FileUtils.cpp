@@ -48,6 +48,15 @@ namespace FileUtils {
 	}
 
 	bool is_path_exists(std::wstring const &path) {
-		return PathFileExistsW(path.c_str());
+		bool is_exists = PathFileExistsW(path.c_str());
+		if (!is_exists) {
+			if (ERROR_FILE_NOT_FOUND != GetLastError()) {
+				DEBUG_MSG("PathFileExistsW failed with error_code=" << GetLastError() <<
+					" dir_path= " << path.c_str());
+				throw FileInstallerException(FileInstallerStatus::FILEUTILS_IS_PATH_EXISTS_FAILED);
+			}
+		}
+
+		return is_exists;
 	}
 }
