@@ -8,7 +8,7 @@
 #define DEBUG_MSG(str) do { } while ( false )
 #endif
 
-enum FileInstallerStatus : uint32_t {
+enum class FileInstallerStatus: uint32_t{
 	FILEINSTALLER_SUCCESS = 0,
 	
 	FILEUTILS_COPY_FILE_COPY_FAILED,
@@ -28,42 +28,81 @@ private:
 	FileInstallerStatus status;
 };
 
+class ResourceInstaller;
+
 /*
 FileInstaller - Allows installation of files in a target directory.
 
-Notice: FileInstaller class doesn't support paths longer than MAX_PATH.
+Notice: Installer class doesn't support paths longer than MAX_PATH.
 */
-class FileInstaller final {
+class Installer final {
 public:
-	FileInstaller(std::vector<std::wstring> &file_paths, std::wstring const &installation_dir);
-	virtual ~FileInstaller();
+	Installer(std::vector<std::shared_ptr<ResourceInstaller>>& resource_installers);
+	virtual ~Installer();
 	void install();
+
+	Installer(const Installer&) = delete;
+	Installer& operator=(Installer const&) = delete;
+
+private:
+	/*
+	The revert method cant be called standalone because it will revert only things performed during the install method.
+	This is working by best effort.
+	*/
+	void _revert();
+
+private:
+	std::vector<std::shared_ptr<ResourceInstaller>> m_resource_installers;
+	std::vector<std::shared_ptr<ResourceInstaller>> m_installed_resource_installers;
+	bool m_is_installed;
+};
+
+class ResourceInstaller {
+public:
+	virtual void install() = 0;
+	/*
+	The revert method cant be called standalone because it will revert only things performed during the install method.
+	This is working by best effort.
+	*/
+	virtual void revert() = 0;
+
+};
+
+class FileInstaller final : public ResourceInstaller {
+public:
+	FileInstaller(std::wstring const &file_path, std::wstring const &installation_dir);
+	virtual ~FileInstaller();
+	virtual void install();
+	virtual void revert();
 
 	FileInstaller(const FileInstaller&) = delete;
 	FileInstaller& operator=(FileInstaller const&) = delete;
 
 private:
-	void _copy_file(std::wstring const &file_path);
-	void _delete_file(std::wstring const &file_path);
-	void _copy_files();
-	void _create_installation_dir();
-	
-	// This method is working by best effort.
-	FileInstallerStatus _delete_installation_dir();
-
-	// This method is working by best effort.
-	FileInstallerStatus _delete_installed_files();
-
-	/*
-	The revert method cant be called standalone because it will revert only things performed during the install method.
-	This is working by best effort.
-	*/
-	void _revert_installation();
+	void _copy_file();
+	void _delete_file();
 
 private:
-	std::vector<std::wstring> m_file_paths;
+	std::wstring m_file_path;
 	std::wstring m_installation_dir;
-	bool m_is_dir_already_exists;
-	std::vector<std::wstring> m_file_paths_to_clean;
+	bool m_is_file_already_exists;
+};
 
+class DirInstaller final : public ResourceInstaller {
+public:
+	DirInstaller(std::wstring const &directory_path);
+	virtual ~DirInstaller();
+	virtual void install();
+	virtual void revert();
+
+	DirInstaller(const DirInstaller&) = delete;
+	DirInstaller& operator=(DirInstaller const&) = delete;
+
+private:
+	void _create_directory();
+	void _delete_directory();
+
+private:
+	std::wstring m_directory_path;
+	bool m_is_directory_already_exists;
 };

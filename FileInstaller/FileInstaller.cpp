@@ -5,102 +5,114 @@
 #include "FileInstaller.hpp"
 #include "FileUtils.hpp"
 
-FileInstaller::FileInstaller(std::vector<std::wstring> &file_paths, std::wstring const &installation_dir)
-	: m_file_paths(file_paths),
+Installer::Installer(std::vector<std::shared_ptr<ResourceInstaller>>& resource_installers) 
+	:m_resource_installers(resource_installers),
+	m_installed_resource_installers({}),
+	m_is_installed(false) {}
+
+Installer::~Installer() {
+	if (!this->m_is_installed) {
+		this->_revert();
+	}
+}
+
+void Installer::install() {
+	for (auto& resource_installer : this->m_resource_installers) {
+		resource_installer->install();
+		this->m_installed_resource_installers.push_back(resource_installer);
+	}
+
+	this->m_is_installed = true;
+}
+
+void Installer::_revert() {
+	DEBUG_MSG("Reverting installation (best effort)");
+	// We revert in reverse order so the files will be deleted first and then the directories.
+	for (auto resource_installer = this->m_installed_resource_installers.rbegin(); resource_installer != this->m_installed_resource_installers.rend(); ++resource_installer)
+	{
+		(*resource_installer)->revert();
+	}
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+FileInstaller::FileInstaller(std::wstring const &file_path, std::wstring const &installation_dir) 
+	:m_file_path(file_path),
 	m_installation_dir(installation_dir),
-	m_is_dir_already_exists(false),
-	m_file_paths_to_clean({}) {}
+	m_is_file_already_exists(true) {}
 
 FileInstaller::~FileInstaller() {}
 
 void FileInstaller::install() {
-	try {
-		this->_create_installation_dir();
-		this->_copy_files();
-	}
-	catch (FileInstallerException &e) {
-		this->_revert_installation();
-		// Installation exception will be ignored in case an exception will be thrown during revertion.
-		throw e;
+	this->_copy_file();
+}
+
+void FileInstaller::revert() {
+	if (!this->m_is_file_already_exists) {
+		this->_delete_file();
 	}
 }
 
-void FileInstaller::_revert_installation() {
-	DEBUG_MSG("Reverting installation (best effort)");
-	// Because we're doing best effort we're not return any return values about the status of the revert operation.
-	(void)this->_delete_installed_files();
-
-	if (!this->m_is_dir_already_exists) {
-		(void)this->_delete_installation_dir();
-	}
-}
-
-void FileInstaller::_copy_file(std::wstring const &file_path) {
-	std::wstring full_target_path = FileUtils::change_file_path_directory(file_path, this->m_installation_dir);
+void FileInstaller::_copy_file() {
+	std::wstring full_target_path = FileUtils::change_file_path_directory(this->m_file_path, this->m_installation_dir);
 
 	bool is_file_exists = FileUtils::is_path_exists(full_target_path);
 	if (!is_file_exists) {
-		this->m_file_paths_to_clean.push_back(file_path.c_str());
-		FileUtils::copy_file(file_path, full_target_path);
-		DEBUG_MSG("File was copied. from_path=" << file_path.c_str() << ", to_path=" << full_target_path.c_str());
+		this->m_is_file_already_exists = false;
+		FileUtils::copy_file(this->m_file_path, full_target_path);
+		DEBUG_MSG("File was copied. from_path=" << this->m_file_path.c_str() << ", to_path=" << full_target_path.c_str());
 	}
 	else {
 		DEBUG_MSG("File already exists. path=" << full_target_path.c_str());
 	}
 }
 
-void FileInstaller::_copy_files() {
-	for (auto &file_path : this->m_file_paths) {
-		this->_copy_file(file_path);
-	}
-}
-
-void FileInstaller::_delete_file(std::wstring const &file_path) {
-	std::wstring full_target_path = FileUtils::change_file_path_directory(file_path, this->m_installation_dir);
+void FileInstaller::_delete_file() {
+	std::wstring full_target_path = FileUtils::change_file_path_directory(this->m_file_path, this->m_installation_dir);
 	FileUtils::delete_file(full_target_path, true);
 	DEBUG_MSG("File was deleted path=" << full_target_path.c_str());
 }
 
-FileInstallerStatus FileInstaller::_delete_installed_files() {
-	auto status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
-	for (auto &file_path : this->m_file_paths_to_clean) {
-		try {
-			this->_delete_file(file_path);
-		}
-		catch (FileInstallerException const &e) {
-			// Best effort
-			status = e.get_status();
-		}
-	}
 
-	return status;
+
+DirInstaller::DirInstaller(std::wstring const& directory_path)
+	:m_directory_path(directory_path),
+	m_is_directory_already_exists(true) {}
+
+DirInstaller::~DirInstaller() {}
+
+void DirInstaller::install() {
+	this->_create_directory();
 }
 
-void FileInstaller::_create_installation_dir() {
-	if (!FileUtils::is_path_exists(this->m_installation_dir.c_str())) {
-		FileUtils::create_directory(this->m_installation_dir);
-		DEBUG_MSG("Directory was created. path=" << this->m_installation_dir.c_str());
+void DirInstaller::revert() {
+	if (!this->m_is_directory_already_exists) {
+		this->_delete_directory();
+	}
+}
+
+void DirInstaller::_create_directory() {
+	if (!FileUtils::is_path_exists(this->m_directory_path.c_str())) {
+		this->m_is_directory_already_exists = false;
+		FileUtils::create_directory(this->m_directory_path);
+		DEBUG_MSG("Directory was created. path=" << this->m_directory_path.c_str());
 	}
 	else {
-		this->m_is_dir_already_exists = true;
-		DEBUG_MSG("Installation dir already exists. path=" << this->m_installation_dir.c_str());
+		DEBUG_MSG("Installation dir already exists. path=" << this->m_directory_path.c_str());
 	}
 }
 
-FileInstallerStatus FileInstaller::_delete_installation_dir() {
+void DirInstaller::_delete_directory() {
 	auto status = FileInstallerStatus::FILEINSTALLER_SUCCESS;
 
-	if (!FileUtils::is_path_exists(this->m_installation_dir.c_str())) {
-		return status;
+	if (!FileUtils::is_path_exists(this->m_directory_path.c_str())) {
+		return;
 	}
 
-	try {
-		FileUtils::delete_directory(this->m_installation_dir);
-		DEBUG_MSG("Directory was deleted. path=" << this->m_installation_dir.c_str());
-	}
-	catch (FileInstallerException const &e) {
-		status = e.get_status();
-	}
-
-	return status;
+	FileUtils::delete_directory(this->m_directory_path);
+	DEBUG_MSG("Directory was deleted. path=" << this->m_directory_path.c_str());
 }
