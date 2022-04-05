@@ -61,8 +61,8 @@ private:
 	void _revert_installation();
 
 private:
-	std::vector<std::wstring> &m_file_paths;
-	std::wstring const &m_installation_dir;
+	std::vector<std::wstring> m_file_paths;
+	std::wstring m_installation_dir;
 	bool m_is_dir_already_exists;
 	std::vector<std::wstring> m_file_paths_to_clean;
 
