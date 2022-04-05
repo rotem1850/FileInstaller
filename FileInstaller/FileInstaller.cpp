@@ -40,8 +40,8 @@ void FileInstaller::_copy_file(std::wstring const &file_path) {
 
 	bool is_file_exists = FileUtils::is_path_exists(full_target_path);
 	if (!is_file_exists) {
-		FileUtils::copy_file(file_path, full_target_path);
 		this->m_file_paths_to_clean.push_back(file_path.c_str());
+		FileUtils::copy_file(file_path, full_target_path);
 		DEBUG_MSG("File was copied. from_path=" << file_path.c_str() << ", to_path=" << full_target_path.c_str());
 	}
 	else {
@@ -57,7 +57,7 @@ void FileInstaller::_copy_files() {
 
 void FileInstaller::_delete_file(std::wstring const &file_path) {
 	std::wstring full_target_path = FileUtils::change_file_path_directory(file_path, this->m_installation_dir);
-	FileUtils::delete_file(full_target_path);
+	FileUtils::delete_file(full_target_path, true);
 	DEBUG_MSG("File was deleted path=" << full_target_path.c_str());
 }
 

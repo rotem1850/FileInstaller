@@ -3,7 +3,7 @@
 
 namespace FileUtils {
 	void copy_file(std::wstring const &source_file_path, std::wstring const &dest_file_path);
-	void delete_file(std::wstring const &file_path);
+	void delete_file(std::wstring const &file_path, bool ignore_file_not_exists);
 	void create_directory(std::wstring const &directory_path);
 	void delete_directory(std::wstring const &directory_path);
 	bool is_path_exists(std::wstring const &path);

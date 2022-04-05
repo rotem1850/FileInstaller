@@ -10,16 +10,21 @@ namespace fs = std::filesystem;
 
 namespace FileUtils {
 	void copy_file(std::wstring const &source_file_path, std::wstring const &dest_file_path) {
-		if (!CopyFileW(source_file_path.c_str(), dest_file_path.c_str(), false)) {
+		if (!CopyFileW(source_file_path.c_str(), dest_file_path.c_str(), true)) {
 			DEBUG_MSG("CopyFileExW failed with error_code=" << GetLastError() << 
 				" path=" << dest_file_path.c_str());
 			throw FileInstallerException(FileInstallerStatus::FILEUTILS_COPY_FILE_COPY_FAILED);
 		}
 	}
 
-	void delete_file(std::wstring const &file_path) {
+	void delete_file(std::wstring const &file_path, bool ignore_file_not_exists) {
 		bool is_deleted = DeleteFileW(file_path.c_str());
 		if (!is_deleted) {
+			if (ignore_file_not_exists &&
+				(ERROR_FILE_NOT_FOUND == GetLastError())) {
+				return;
+			}
+
 			DEBUG_MSG("DeleteFileW failed with error_code=" << GetLastError() << " path = " << file_path.c_str());
 			throw FileInstallerException(FileInstallerStatus::FILEUTILS_DELETE_FILE_DELETE_FAILED);
 		}
