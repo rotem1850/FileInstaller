@@ -163,8 +163,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="DirInstaller.cpp" />
     <ClCompile Include="FileInstaller.cpp" />
     <ClCompile Include="FileUtils.cpp" />
+    <ClCompile Include="Installer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>

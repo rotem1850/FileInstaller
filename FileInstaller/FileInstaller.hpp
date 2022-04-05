@@ -10,7 +10,8 @@
 
 enum class FileInstallerStatus: uint32_t{
 	FILEINSTALLER_SUCCESS = 0,
-	
+
+	INSTALLER_INVALID_ARGUMENTS,
 	FILEUTILS_COPY_FILE_COPY_FAILED,
 	FILEUTILS_DELETE_FILE_DELETE_FAILED,
 	FILEUTILS_CREATE_DIRECTORY_CREATE_FAILED,
@@ -31,7 +32,7 @@ private:
 class ResourceInstaller;
 
 /*
-FileInstaller - Allows installation of files in a target directory.
+Installer - Used for perform installation using sequence of ResourceInstallers.
 
 Notice: Installer class doesn't support paths longer than MAX_PATH.
 */
@@ -57,6 +58,11 @@ private:
 	bool m_is_installed;
 };
 
+/*
+* An abstract class used for adding new installation operation to the install process.
+* For example:
+*	- Operation of changing the registry property will derive from this class.
+*/
 class ResourceInstaller {
 public:
 	virtual void install() = 0;
@@ -68,6 +74,7 @@ public:
 
 };
 
+// FileInstaller - Used for installation of a file (copy file to a target dir).
 class FileInstaller final : public ResourceInstaller {
 public:
 	FileInstaller(std::wstring const &file_path, std::wstring const &installation_dir);
@@ -88,6 +95,7 @@ private:
 	bool m_is_file_already_exists;
 };
 
+// DirInstaller - Used for installation of a directory (create new empty directory).
 class DirInstaller final : public ResourceInstaller {
 public:
 	DirInstaller(std::wstring const &directory_path);
