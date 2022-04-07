@@ -259,3 +259,11 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+/FileInstaller/רותם.txt
+/FileInstaller/pch2.cpp
+/FileInstaller/pch.h
+/FileInstaller/pch.cpp
+/FileInstaller/a.txt
+/FileInstaller/installation_files/rotem.txt
+/FileInstaller/target
+/FileInstaller/resource.h
