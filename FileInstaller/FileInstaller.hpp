@@ -65,9 +65,9 @@ private:
 	// This inner class is responsible for all ResourceInstallers revertion in case of failure.
 	class SafeResourceInstaller final {
 	public:
-		SafeResourceInstaller(Installer* installer, std::shared_ptr<ResourceInstaller> resource_installer) : m_installer(installer), m_resource_installer(resource_installer) {};
+		SafeResourceInstaller(std::shared_ptr<bool> is_installed, std::shared_ptr<ResourceInstaller> resource_installer) : m_is_installed(is_installed), m_resource_installer(resource_installer) {};
 		virtual ~SafeResourceInstaller() {
-			if (!m_installer->m_is_installed) {
+			if (!(*m_is_installed)) {
 				this->m_resource_installer->revert();
 			}
 		};
@@ -81,13 +81,14 @@ private:
 
 	private:
 		std::shared_ptr<ResourceInstaller> m_resource_installer;
-		Installer* m_installer;
+		// This is a shared_ptr cause its shared with the inner class.
+		std::shared_ptr<bool> m_is_installed;
 	};
 
 private:
 	std::vector<std::shared_ptr<ResourceInstaller>> m_resource_installers;
 	std::queue<std::shared_ptr<SafeResourceInstaller>> m_installed_resource_installers;
-	bool m_is_installed;
+	std::shared_ptr<bool> m_is_installed;
 
 };
 
