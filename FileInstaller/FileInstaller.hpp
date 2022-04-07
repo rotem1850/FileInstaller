@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <queue>  
 
 #ifdef _DEBUG
 #define DEBUG_MSG(str) do { std::wcout << L"[" << __FUNCTION__ << "] " << str << std::endl; } while( false )
@@ -29,7 +30,21 @@ private:
 	FileInstallerStatus status;
 };
 
-class ResourceInstaller;
+/*
+* An abstract class used for adding new operation to the install process.
+* For example:
+*	- Operation of changing the registry property will derive from this class.
+*/
+class ResourceInstaller {
+public:
+	virtual void install() = 0;
+	/*
+	The revert method cant be called standalone because it will revert only things performed during the install method.
+	This is working by best effort.
+	*/
+	virtual void revert() = 0;
+
+};
 
 /*
 Installer - Used for perform installation using sequence of ResourceInstallers.
@@ -47,33 +62,36 @@ public:
 	Installer& operator=(Installer const&) = delete;
 
 private:
-	/*
-	The revert method cant be called standalone because it will revert only things performed during the install method.
-	This is working by best effort.
-	*/
-	void _revert();
+	// This inner class is responsible for all ResourceInstallers revertion in case of failure.
+	class SafeResourceInstaller final {
+	public:
+		SafeResourceInstaller(Installer* installer, std::shared_ptr<ResourceInstaller> resource_installer) : m_installer(installer), m_resource_installer(resource_installer) {};
+		virtual ~SafeResourceInstaller() {
+			if (!m_installer->m_is_installed) {
+				this->m_resource_installer->revert();
+			}
+		};
+
+		void install() {
+			this->m_resource_installer->install();
+		};
+
+		SafeResourceInstaller(const SafeResourceInstaller&) = delete;
+		SafeResourceInstaller& operator=(SafeResourceInstaller const&) = delete;
+
+	private:
+		std::shared_ptr<ResourceInstaller> m_resource_installer;
+		Installer* m_installer;
+	};
 
 private:
 	std::vector<std::shared_ptr<ResourceInstaller>> m_resource_installers;
-	std::vector<std::shared_ptr<ResourceInstaller>> m_installed_resource_installers;
+	std::queue<std::shared_ptr<SafeResourceInstaller>> m_installed_resource_installers;
 	bool m_is_installed;
-};
-
-/*
-* An abstract class used for adding new operation to the install process.
-* For example:
-*	- Operation of changing the registry property will derive from this class.
-*/
-class ResourceInstaller {
-public:
-	virtual void install() = 0;
-	/*
-	The revert method cant be called standalone because it will revert only things performed during the install method.
-	This is working by best effort.
-	*/
-	virtual void revert() = 0;
 
 };
+
+
 
 // FileInstaller - Used for installation of a file (copy file to a target dir).
 class FileInstaller final : public ResourceInstaller {

@@ -6,7 +6,7 @@
 
 Installer::Installer(std::vector<std::shared_ptr<ResourceInstaller>> &resource_installers)
 	:m_resource_installers(resource_installers),
-	m_installed_resource_installers({}),
+	m_installed_resource_installers(),
 	m_is_installed(false) {
 
 	// Validate input doen't have any null values. So there will be no surprises during installation.
@@ -17,32 +17,17 @@ Installer::Installer(std::vector<std::shared_ptr<ResourceInstaller>> &resource_i
 	}
 }
 
-Installer::~Installer() {
-	if (!this->m_is_installed) {
-		this->_revert();
-	}
-}
+Installer::~Installer() {}
 
 void Installer::install() {
 	for (auto& resource_installer : this->m_resource_installers) {
-		resource_installer->install();
-		this->m_installed_resource_installers.push_back(resource_installer);
+		auto safe_resource_installer = std::make_shared<Installer::SafeResourceInstaller>(this, resource_installer);
+		safe_resource_installer->install();
+
+		// We push the installers to a queue so the destructors will be called in reverse order.
+		this->m_installed_resource_installers.push(safe_resource_installer);
 	}
 
 	this->m_is_installed = true;
 }
 
-void Installer::_revert() {
-	DEBUG_MSG("Reverting installation (best effort)");
-	// We revert in reverse order so the files will be deleted first and then the directories.
-	for (auto resource_installer = this->m_installed_resource_installers.rbegin(); resource_installer != this->m_installed_resource_installers.rend(); ++resource_installer)
-	{
-		try {
-			(*resource_installer)->revert();
-		}
-		catch (FileInstallerException) {
-			// Best effort
-		}
-		
-	}
-}
